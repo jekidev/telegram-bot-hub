@@ -1,0 +1,6 @@
+flask
+python-telegram-bot==21.5
+aiohttp
+requests
+gitpython
+psutil
