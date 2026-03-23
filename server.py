@@ -1,53 +1,64 @@
-from flask import Flask, jsonify, send_from_directory
-from bot_manager import BotManager
 import os
+
 from dotenv import load_dotenv
+from flask import Flask, jsonify, redirect
+
+from bot_manager import BotManager
 
 load_dotenv()
 
-app = Flask(__name__, static_folder="dashboard")
+app = Flask(__name__, static_folder="dashboard", static_url_path="")
 manager = BotManager()
 
+
 @app.route("/")
-def status():
-    return jsonify({
-        "status": "Valkyrie Cloud running",
-        "bots": manager.list_bots()
-    })
+def dashboard():
+    return app.send_static_file("index.html")
+
+
+@app.route("/dashboard")
+def legacy_dashboard():
+    return redirect("/")
+
+
+@app.get("/api/bots")
+def api_bots():
+    return jsonify(
+        {
+            "status": "Valkyrie Cloud running",
+            "bots": manager.list_bots(),
+        }
+    )
+
+
+@app.post("/api/start/<bot_name>")
+def start_bot(bot_name):
+    ok, message = manager.start(bot_name)
+    status_code = 200 if ok else 400
+    return jsonify({"ok": ok, "message": message, "bot": bot_name}), status_code
+
+
+@app.post("/api/stop/<bot_name>")
+def stop_bot(bot_name):
+    ok, message = manager.stop(bot_name)
+    status_code = 200 if ok else 400
+    return jsonify({"ok": ok, "message": message, "bot": bot_name}), status_code
+
+
+@app.post("/api/restart/<bot_name>")
+def restart_bot(bot_name):
+    ok, message = manager.restart(bot_name)
+    status_code = 200 if ok else 400
+    return jsonify({"ok": ok, "message": message, "bot": bot_name}), status_code
+
 
 @app.route("/health")
 def health():
-    return "OK"
+    return jsonify({"status": "ok", "bots": manager.list_bots()})
 
-@app.route("/api/bots")
-def api_bots():
-    return jsonify(manager.list_bots())
-
-@app.route("/api/start/<bot>")
-def start_bot(bot):
-    manager.start(bot)
-    return jsonify({"started": bot})
-
-@app.route("/api/stop/<bot>")
-def stop_bot(bot):
-    manager.stop(bot)
-    return jsonify({"stopped": bot})
-
-@app.route("/api/restart/<bot>")
-def restart_bot(bot):
-    manager.restart(bot)
-    return jsonify({"restarted": bot})
-
-@app.route("/dashboard")
-def dashboard():
-    return send_from_directory("dashboard", "index.html")
-
-@app.route("/dashboard/<path:path>")
-def dashboard_files(path):
-    return send_from_directory("dashboard", path)
 
 if __name__ == "__main__":
-    print("⚡ Starting Valkyrie Cloud...")
+    print("Starting Valkyrie Cloud")
     manager.start_all()
 
     port = int(os.environ.get("PORT", 10000))

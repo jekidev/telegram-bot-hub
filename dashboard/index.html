@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Valkyrie Cloud</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    >
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <main class="shell">
+      <section class="hero">
+        <p class="eyebrow">Valkyrie Cloud</p>
+        <h1>Frontend and bot control in one Render service.</h1>
+        <p class="subcopy">
+          This dashboard monitors the Telegram bot hub, shows configured bot
+          status, and lets you start, stop, or restart services without leaving
+          the browser.
+        </p>
+        <div class="summary" id="summary">
+          <article class="summary-card">
+            <span class="summary-label">Running</span>
+            <strong id="running-count">0</strong>
+          </article>
+          <article class="summary-card">
+            <span class="summary-label">Configured</span>
+            <strong id="configured-count">0</strong>
+          </article>
+          <article class="summary-card">
+            <span class="summary-label">Total</span>
+            <strong id="total-count">0</strong>
+          </article>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <div>
+            <p class="eyebrow">Bot Fleet</p>
+            <h2>Live status</h2>
+          </div>
+          <button id="refresh-button" class="ghost-button" type="button">Refresh</button>
+        </div>
+        <div id="bot-grid" class="bot-grid"></div>
+      </section>
+    </main>
+
+    <template id="bot-card-template">
+      <article class="bot-card">
+        <div class="bot-card-header">
+          <div>
+            <p class="bot-name"></p>
+            <p class="bot-meta"></p>
+          </div>
+          <span class="status-pill"></span>
+        </div>
+        <p class="bot-detail configured-detail"></p>
+        <p class="bot-detail runtime-detail"></p>
+        <p class="bot-detail error-detail"></p>
+        <div class="bot-actions">
+          <button class="action-button" data-action="start" type="button">Start</button>
+          <button class="action-button" data-action="restart" type="button">Restart</button>
+          <button class="action-button" data-action="stop" type="button">Stop</button>
+        </div>
+      </article>
+    </template>
+
+    <script src="/app.js" defer></script>
+  </body>
+</html>
