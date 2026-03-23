@@ -1,4 +1,4 @@
-python-telegram-bot==21.5
+python-telegram-bot[job-queue]==22.1.0
 flask
 python-dotenv
 requests
@@ -7,3 +7,6 @@ aiohttp
 beautifulsoup4
 aiofiles
 Pillow
+psycopg2-binary
+pycryptodome
+discord.py
