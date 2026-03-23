@@ -8,9 +8,9 @@ class BotManager:
         self.processes = {}
 
     def load_bots(self):
-        # Use final bot that uses raw API calls
+        # Use fixed bot with proper command handling
         bot_files = [
-            ("final_bot", "VALKYRIEMENU_BOT_TOKEN"),
+            ("fixed_bot", "VALKYRIEMENU_BOT_TOKEN"),
         ]
         
         for bot_name, token_env in bot_files:
