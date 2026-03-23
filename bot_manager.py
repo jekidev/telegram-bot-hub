@@ -8,14 +8,9 @@ class BotManager:
         self.processes = {}
 
     def load_bots(self):
-        # Use all your actual bot tokens
+        # Start with just one working bot for testing
         bot_files = [
-            ("group_guard_bot", "VALKYRIEGROUPMOD_BOT_TOKEN"),
-            ("menu_bot", "VALKYRIEMENU_BOT_TOKEN"),
-            ("image_bot", "VALKYRIESELLERBUYER_BOT_TOKEN"),
-            ("llm_bridge_bot", "VALKYRIEPOSTER1249_BOT_TOKEN"),
-            ("valkyrie_llm_bot", "VALKYRIEWELCOME_BOT_TOKEN"),
-            ("maigret_bot", "VALKYRIEMOTHER_BOT_TOKEN"),
+            ("working_bot", "VALKYRIEMENU_BOT_TOKEN"),
         ]
         
         for bot_name, token_env in bot_files:

@@ -1,16 +1,15 @@
 import os
-import asyncio
 from telegram import Update
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
+from telegram.ext import Updater, CommandHandler, CallbackContext
 from dotenv import load_dotenv
 
 load_dotenv()
 TOKEN = os.getenv("VALKYRIEMENU_BOT_TOKEN")
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("⚡ Valkyrie Menu Bot Online\n\nCommands:\n/start - Show this menu\n/menu - Show main menu")
+def start(update: Update, context: CallbackContext):
+    update.message.reply_text("⚡ Valkyrie Menu Bot Online\n\nCommands:\n/start - Show this menu\n/menu - Show main menu")
 
-async def menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+def menu(update: Update, context: CallbackContext):
     menu_text = """
 🚀 VALKYRIE MENU
 ━━━━━━━━━━━━━━
@@ -24,22 +23,22 @@ async def menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
 ━━━━━━━━━━━━━━
 Admin controls available.
     """
-    await update.message.reply_text(menu_text)
+    update.message.reply_text(menu_text)
 
-def start():
+def main():
     if not TOKEN:
-        print("Missing VALKYRIE_MENU_TOKEN")
+        print("Missing VALKYRIEMENU_BOT_TOKEN")
         return
     
-    async def run_bot():
-        app = Application.builder().token(TOKEN).build()
-        app.add_handler(CommandHandler("start", start))
-        app.add_handler(CommandHandler("menu", menu))
-        
-        print("Menu bot started")
-        await app.run_polling()
+    updater = Updater(TOKEN, use_context=True)
+    dp = updater.dispatcher
     
-    asyncio.run(run_bot())
+    dp.add_handler(CommandHandler("start", start))
+    dp.add_handler(CommandHandler("menu", menu))
+    
+    print("Menu bot started")
+    updater.start_polling()
+    updater.idle()
 
 if __name__ == "__main__":
-    start()
+    main()
