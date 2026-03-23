@@ -1,56 +1,75 @@
 import os
-import subprocess
-import time
+import importlib
+import threading
 
 class BotManager:
+
     def __init__(self):
+
         self.bots = {}
-        self.processes = {}
+        self.bot_threads = {}
 
     def load_bots(self):
-        # Use fixed bot with proper command handling
-        bot_files = [
-            ("fixed_bot", "VALKYRIEMENU_BOT_TOKEN"),
-        ]
-        
-        for bot_name, token_env in bot_files:
-            token = os.getenv(token_env)
-            if token and token != "PASTE_TOKEN_HERE":
-                self.bots[bot_name] = token_env
-                print(f"Loaded bot: {bot_name}")
-            else:
-                print(f"Skipping {bot_name} - missing token {token_env}")
+
+        bot_folder = "bots"
+
+        for file in os.listdir(bot_folder):
+
+            if not file.endswith(".py"):
+                continue
+
+            name = file.replace(".py","")
+
+            try:
+
+                module = importlib.import_module(f"bots.{name}")
+
+                self.bots[name] = module
+
+                print("Loaded bot:", name)
+
+            except Exception as e:
+
+                print("Failed loading bot:", name, e)
+
+
+    def start(self, name):
+
+        if name not in self.bots:
+            return
+
+        module = self.bots[name]
+
+        if hasattr(module,"main"):
+
+            t = threading.Thread(target=module.main)
+            t.start()
+
+            self.bot_threads[name] = t
+
+            print("Started bot:", name)
+
 
     def start_all(self):
+
         self.load_bots()
-        
-        for bot_name, token_env in self.bots.items():
-            try:
-                # Start each bot as a separate process
-                cmd = ["python", f"bots/{bot_name}.py"]
-                process = subprocess.Popen(cmd, cwd=os.getcwd())
-                self.processes[bot_name] = process
-                print(f"Started {bot_name} (PID: {process.pid})")
-                time.sleep(2)  # Stagger starts to avoid conflicts
-            except Exception as e:
-                print(f"Failed to start {bot_name}: {e}")
-        
-        # Monitor processes
-        def monitor():
-            while True:
-                time.sleep(15)
-                for name, proc in self.processes.items():
-                    if proc.poll() is not None:
-                        print(f"Bot {name} crashed, restarting...")
-                        cmd = ["python", f"bots/{name}.py"]
-                        self.processes[name] = subprocess.Popen(cmd, cwd=os.getcwd())
-                        print(f"Restarted {name}")
-                        time.sleep(2)
-        
-        # Start monitoring in background
-        import threading
-        monitor_thread = threading.Thread(target=monitor, daemon=True)
-        monitor_thread.start()
+
+        for name in self.bots:
+
+            self.start(name)
+
 
     def list_bots(self):
+
         return list(self.bots.keys())
+
+
+    def stop(self,name):
+
+        print("Stop not implemented yet")
+
+
+    def restart(self,name):
+
+        self.stop(name)
+        self.start(name)
