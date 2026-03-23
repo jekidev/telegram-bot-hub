@@ -1,5 +1,5 @@
+python-telegram-bot==21.5
 flask
-python-telegram-bot==20.8
 python-dotenv
 aiohttp
 requests
