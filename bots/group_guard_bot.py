@@ -1,11 +1,11 @@
 import os
-import time
 import asyncio
-from collections import defaultdict
 from telegram import Update
-from telegram.ext import Application, MessageHandler, filters, ContextTypes
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
+from dotenv import load_dotenv
 
-TOKEN = os.getenv("VALKYRIE_GROUP_TOKEN")
+load_dotenv()
+TOKEN = os.getenv("VALKYRIEGROUPMOD_BOT_TOKEN")
 
 # raid tracking
 join_tracker = defaultdict(list)

@@ -8,8 +8,14 @@ class BotManager:
         self.processes = {}
 
     def load_bots(self):
+        # Use all your actual bot tokens
         bot_files = [
-            ("test_bot", "VALKYRIEMENU_BOT_TOKEN"),
+            ("group_guard_bot", "VALKYRIEGROUPMOD_BOT_TOKEN"),
+            ("menu_bot", "VALKYRIEMENU_BOT_TOKEN"),
+            ("image_bot", "VALKYRIESELLERBUYER_BOT_TOKEN"),
+            ("llm_bridge_bot", "VALKYRIEPOSTER1249_BOT_TOKEN"),
+            ("valkyrie_llm_bot", "VALKYRIEWELCOME_BOT_TOKEN"),
+            ("maigret_bot", "VALKYRIEMOTHER_BOT_TOKEN"),
         ]
         
         for bot_name, token_env in bot_files:
@@ -30,19 +36,21 @@ class BotManager:
                 process = subprocess.Popen(cmd, cwd=os.getcwd())
                 self.processes[bot_name] = process
                 print(f"Started {bot_name} (PID: {process.pid})")
+                time.sleep(2)  # Stagger starts to avoid conflicts
             except Exception as e:
                 print(f"Failed to start {bot_name}: {e}")
         
         # Monitor processes
         def monitor():
             while True:
-                time.sleep(10)
+                time.sleep(15)
                 for name, proc in self.processes.items():
                     if proc.poll() is not None:
                         print(f"Bot {name} crashed, restarting...")
                         cmd = ["python", f"bots/{name}.py"]
                         self.processes[name] = subprocess.Popen(cmd, cwd=os.getcwd())
                         print(f"Restarted {name}")
+                        time.sleep(2)
         
         # Start monitoring in background
         import threading

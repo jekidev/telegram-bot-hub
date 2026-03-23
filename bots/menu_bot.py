@@ -2,8 +2,10 @@ import os
 import asyncio
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
+from dotenv import load_dotenv
 
-TOKEN = os.getenv("VALKYRIE_MENU_TOKEN")
+load_dotenv()
+TOKEN = os.getenv("VALKYRIEMENU_BOT_TOKEN")
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("⚡ Valkyrie Menu Bot Online\n\nCommands:\n/start - Show this menu\n/menu - Show main menu")

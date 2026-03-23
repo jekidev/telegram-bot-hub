@@ -2,8 +2,10 @@ import os
 import asyncio
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
+from dotenv import load_dotenv
 
-TOKEN = os.getenv("VALKYRIE_MAIGRET_TOKEN")
+load_dotenv()
+TOKEN = os.getenv("VALKYRIEMOTHER_BOT_TOKEN")
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("🔍 Valkyrie Maigret OSINT Bot Online\nSend username to investigate!")
