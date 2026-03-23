@@ -8,9 +8,9 @@ class BotManager:
         self.processes = {}
 
     def load_bots(self):
-        # Start with just one working bot for testing
+        # Run debug bot to see what's wrong
         bot_files = [
-            ("working_bot", "VALKYRIEMENU_BOT_TOKEN"),
+            ("debug_bot", "VALKYRIEMENU_BOT_TOKEN"),
         ]
         
         for bot_name, token_env in bot_files:
