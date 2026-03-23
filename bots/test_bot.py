@@ -1,15 +1,19 @@
 import os
+from dotenv import load_dotenv
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
-TOKEN = os.getenv("VALKYRIE_MENU_TOKEN")
+# Load environment variables
+load_dotenv()
+
+TOKEN = os.getenv("VALKYRIEMENU_BOT_TOKEN")
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("⚡ Test Bot Online!")
 
 def main():
     if not TOKEN:
-        print("Missing VALKYRIE_MENU_TOKEN")
+        print("Missing VALKYRIEMENU_BOT_TOKEN")
         return
     
     app = Application.builder().token(TOKEN).build()

@@ -9,7 +9,7 @@ class BotManager:
 
     def load_bots(self):
         bot_files = [
-            ("test_bot", "VALKYRIE_MENU_TOKEN"),
+            ("test_bot", "VALKYRIEMENU_BOT_TOKEN"),
         ]
         
         for bot_name, token_env in bot_files:
