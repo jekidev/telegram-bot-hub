@@ -4,7 +4,8 @@ from collections import defaultdict
 
 from dotenv import load_dotenv
 from telegram import Update
-from telegram.ext import ApplicationBuilder, ContextTypes, MessageHandler, filters
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, filters
+from common import make_alive_command, make_post_init, run_polling
 
 load_dotenv()
 TOKEN = os.getenv("VALKYRIEGROUPMOD_BOT_TOKEN")
@@ -137,7 +138,8 @@ def main():
         print("Missing VALKYRIEGROUPMOD_BOT_TOKEN")
         return
 
-    app = ApplicationBuilder().token(TOKEN).build()
+    app = ApplicationBuilder().token(TOKEN).post_init(make_post_init("Group Guard Bot")).build()
+    app.add_handler(CommandHandler("alive", make_alive_command("Group Guard Bot")))
     app.add_handler(MessageHandler(filters.ALL, block_media))
     app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, block_bots))
     app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, detect_raid))
@@ -146,7 +148,7 @@ def main():
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, detect_reports))
 
     print("Group Guard bot started")
-    app.run_polling()
+    run_polling(app)
 
 
 if __name__ == "__main__":

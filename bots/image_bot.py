@@ -3,6 +3,7 @@ import os
 from dotenv import load_dotenv
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, filters
+from common import make_alive_command, make_post_init, run_polling
 
 load_dotenv()
 TOKEN = os.getenv("VALKYRIESELLERBUYER_BOT_TOKEN")
@@ -34,12 +35,13 @@ def main():
         print("Missing VALKYRIESELLERBUYER_BOT_TOKEN")
         return
 
-    app = ApplicationBuilder().token(TOKEN).build()
+    app = ApplicationBuilder().token(TOKEN).post_init(make_post_init("Image Bot")).build()
     app.add_handler(CommandHandler("start", start_command))
+    app.add_handler(CommandHandler("alive", make_alive_command("Image Bot")))
     app.add_handler(MessageHandler(filters.PHOTO | filters.Document.IMAGE, handle_image))
 
     print("Image bot started")
-    app.run_polling()
+    run_polling(app)
 
 
 if __name__ == "__main__":
