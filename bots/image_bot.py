@@ -1,4 +1,5 @@
 import os
+import asyncio
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 
@@ -18,12 +19,15 @@ def start():
         print("Missing VALKYRIE_IMAGE_TOKEN")
         return
     
-    app = Application.builder().token(TOKEN).build()
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.PHOTO | filters.Document.IMAGE, handle_image))
+    async def run_bot():
+        app = Application.builder().token(TOKEN).build()
+        app.add_handler(CommandHandler("start", start))
+        app.add_handler(MessageHandler(filters.PHOTO | filters.ATTACHMENT, handle_image))
+        
+        print("Image bot started")
+        await app.run_polling()
     
-    print("Image bot started")
-    app.run_polling()
+    asyncio.run(run_bot())
 
 if __name__ == "__main__":
     start()

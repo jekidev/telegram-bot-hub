@@ -1,4 +1,5 @@
 import os
+import asyncio
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 
@@ -17,12 +18,15 @@ def start():
         print("Missing VALKYRIE_LLM_TOKEN")
         return
     
-    app = Application.builder().token(TOKEN).build()
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+    async def run_bot():
+        app = Application.builder().token(TOKEN).build()
+        app.add_handler(CommandHandler("start", start))
+        app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+        
+        print("LLM Bridge bot started")
+        await app.run_polling()
     
-    print("LLM Bridge bot started")
-    app.run_polling()
+    asyncio.run(run_bot())
 
 if __name__ == "__main__":
     start()

@@ -1,6 +1,7 @@
 import os
+import asyncio
 from telegram import Update
-from telegram.ext import Application, CommandHandler, ContextTypes
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 
 TOKEN = os.getenv("VALKYRIE_MENU_TOKEN")
 
@@ -28,12 +29,15 @@ def start():
         print("Missing VALKYRIE_MENU_TOKEN")
         return
     
-    app = Application.builder().token(TOKEN).build()
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("menu", menu))
+    async def run_bot():
+        app = Application.builder().token(TOKEN).build()
+        app.add_handler(CommandHandler("start", start))
+        app.add_handler(CommandHandler("menu", menu))
+        
+        print("Menu bot started")
+        await app.run_polling()
     
-    print("Menu bot started")
-    app.run_polling()
+    asyncio.run(run_bot())
 
 if __name__ == "__main__":
     start()

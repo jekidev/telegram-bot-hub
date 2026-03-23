@@ -1,5 +1,6 @@
 import os
 import time
+import asyncio
 from collections import defaultdict
 from telegram import Update
 from telegram.ext import Application, MessageHandler, filters, ContextTypes
@@ -103,18 +104,20 @@ def start():
         print("Missing VALKYRIE_GROUP_TOKEN")
         return
     
-    app = Application.builder().token(TOKEN).build()
+    async def run_bot():
+        app = Application.builder().token(TOKEN).build()
+        
+        # Add handlers with correct filter names
+        app.add_handler(MessageHandler(filters.PHOTO | filters.VIDEO | filters.ATTACHMENT | filters.ANIMATION | filters.VOICE | filters.STICKER, block_media))
+        app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, block_bots))
+        app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, detect_raid))
+        app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, detect_spam))
+        
+        print("Group Guard bot started")
+        await app.run_polling()
     
-    # Add handlers
-    app.add_handler(MessageHandler(filters.PHOTO | filters.VIDEO | filters.DOCUMENT | filters.ANIMATION | filters.VOICE | filters.STICKER, block_media))
-    app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, block_bots))
-    app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, detect_raid))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, detect_spam))
-    app.add_handler(MessageHandler(filters.ENTITY, block_custom_emoji))
-    app.add_handler(MessageHandler(filters.TEXT, detect_reports))
-    
-    print("Group Guard bot started")
-    app.run_polling()
+    # Run in async context
+    asyncio.run(run_bot())
 
 if __name__ == "__main__":
     start()
