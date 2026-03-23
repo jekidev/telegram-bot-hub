@@ -5,7 +5,7 @@ from collections import defaultdict
 from dotenv import load_dotenv
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, filters
-from common import make_alive_command, make_post_init, run_polling
+from common import is_private_chat, make_alive_command, make_post_init, run_polling
 
 load_dotenv()
 TOKEN = os.getenv("VALKYRIEGROUPMOD_BOT_TOKEN")
@@ -17,6 +17,18 @@ SPAM_WINDOW = 5
 
 join_tracker = defaultdict(list)
 message_tracker = defaultdict(list)
+
+
+async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    del context
+    if not is_private_chat(update):
+        return
+    if update.message:
+        await update.message.reply_text(
+            "Group Guard Bot online.\n\n"
+            "Add this bot to a group to help block media spam, bot joins, raid patterns, and repeated spam.\n"
+            "Use /alive here in DM for a health check."
+        )
 
 
 async def block_media(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -139,6 +151,7 @@ def main():
         return
 
     app = ApplicationBuilder().token(TOKEN).post_init(make_post_init("Group Guard Bot")).build()
+    app.add_handler(CommandHandler("start", start_command))
     app.add_handler(CommandHandler("alive", make_alive_command("Group Guard Bot")))
     app.add_handler(MessageHandler(filters.ALL, block_media))
     app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, block_bots))

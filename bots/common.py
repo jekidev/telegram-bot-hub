@@ -33,9 +33,10 @@ def make_post_init(bot_name):
             return
 
         try:
+            username = getattr(application.bot, "username", "") or "unknown"
             await application.bot.send_message(
                 chat_id=int(owner_chat_id),
-                text=f"{bot_name} /alive",
+                text=f"{bot_name} is alive on Render as @{username}.",
             )
         except Exception as exc:
             print(f"Failed to send /alive for {bot_name}: {exc}")
@@ -45,7 +46,7 @@ def make_post_init(bot_name):
 
 def run_polling(app):
     ensure_event_loop()
-    app.run_polling()
+    app.run_polling(drop_pending_updates=True)
 
 
 def is_private_chat(update: Update):
