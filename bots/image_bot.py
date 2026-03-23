@@ -3,7 +3,7 @@ import os
 from dotenv import load_dotenv
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, filters
-from common import make_alive_command, make_post_init, run_polling
+from common import is_private_chat, make_alive_command, make_post_init, run_polling
 
 load_dotenv()
 TOKEN = os.getenv("VALKYRIESELLERBUYER_BOT_TOKEN")
@@ -11,12 +11,18 @@ TOKEN = os.getenv("VALKYRIESELLERBUYER_BOT_TOKEN")
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     del context
+    if not is_private_chat(update):
+        return
     if update.message:
-        await update.message.reply_text("Image Bot online. Send a photo or image document.")
+        await update.message.reply_text(
+            "Image Bot online.\n\nSend a photo or image document here in DM.\nUse /alive for a health check."
+        )
 
 
 async def handle_image(update: Update, context: ContextTypes.DEFAULT_TYPE):
     del context
+    if not is_private_chat(update):
+        return
     message = update.message
     if not message:
         return

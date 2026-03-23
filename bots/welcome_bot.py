@@ -3,7 +3,7 @@ import os
 from dotenv import load_dotenv
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, filters
-from common import make_alive_command, make_post_init, run_polling
+from common import is_private_chat, make_alive_command, make_post_init, run_polling
 
 load_dotenv()
 TOKEN = os.getenv("VALKYRIEWELCOME_BOT_TOKEN")
@@ -11,8 +11,12 @@ TOKEN = os.getenv("VALKYRIEWELCOME_BOT_TOKEN")
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     del context
+    if not is_private_chat(update):
+        return
     if update.message:
-        await update.message.reply_text("Welcome Bot online and ready to greet new members.")
+        await update.message.reply_text(
+            "Welcome Bot online.\n\nThis bot greets new members in groups and replies to /alive in DM."
+        )
 
 
 async def welcome_members(update: Update, context: ContextTypes.DEFAULT_TYPE):

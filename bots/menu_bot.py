@@ -3,7 +3,7 @@ import os
 from dotenv import load_dotenv
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
-from common import make_alive_command, make_post_init, run_polling
+from common import is_private_chat, make_alive_command, make_post_init, run_polling
 
 load_dotenv()
 TOKEN = os.getenv("VALKYRIEMENU_BOT_TOKEN")
@@ -11,6 +11,8 @@ TOKEN = os.getenv("VALKYRIEMENU_BOT_TOKEN")
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     del context
+    if not is_private_chat(update):
+        return
     if update.message:
         await update.message.reply_text(
             "Valkyrie Menu Bot online.\n\n"
@@ -22,6 +24,8 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def menu_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     del context
+    if not is_private_chat(update):
+        return
     if update.message:
         await update.message.reply_text(
             "Valkyrie bots:\n"

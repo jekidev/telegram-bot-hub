@@ -18,6 +18,8 @@ def ensure_event_loop():
 def make_alive_command(bot_name):
     async def alive_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         del context
+        if not is_private_chat(update):
+            return
         if update.message:
             await update.message.reply_text(f"{bot_name} is alive.")
 
@@ -44,3 +46,8 @@ def make_post_init(bot_name):
 def run_polling(app):
     ensure_event_loop()
     app.run_polling()
+
+
+def is_private_chat(update: Update):
+    chat = update.effective_chat
+    return bool(chat and chat.type == "private")

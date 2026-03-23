@@ -3,7 +3,7 @@ import os
 from dotenv import load_dotenv
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, filters
-from common import make_alive_command, make_post_init, run_polling
+from common import is_private_chat, make_alive_command, make_post_init, run_polling
 
 load_dotenv()
 TOKEN = os.getenv("VALKYRIEMOTHER_BOT_TOKEN")
@@ -11,14 +11,18 @@ TOKEN = os.getenv("VALKYRIEMOTHER_BOT_TOKEN")
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     del context
+    if not is_private_chat(update):
+        return
     if update.message:
         await update.message.reply_text(
-            "Maigret Bot online. Send a username to start an OSINT lookup."
+            "Maigret Bot online.\n\nSend a username here in DM to start an OSINT lookup.\nUse /alive for a health check."
         )
 
 
 async def handle_search(update: Update, context: ContextTypes.DEFAULT_TYPE):
     del context
+    if not is_private_chat(update):
+        return
     if update.message and update.message.text:
         await update.message.reply_text(
             f"Searching for '{update.message.text}' and preparing OSINT results."
