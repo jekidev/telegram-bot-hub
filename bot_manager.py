@@ -94,7 +94,7 @@ ENABLED_PROCESSES = {
         "extra_env": {
             "TELEGRAM_BOT_TOKEN": "${VALKYRIEGROUPMOD_BOT_TOKEN}",
             "SELLER_BUYER_BOT_TOKEN": "${VALKYRIESELLERBUYER_BOT_TOKEN}",
-            "BRIDGE_API_PORT": "5050",
+            "BRIDGE_API_PORT": "5052",
         },
     },
     "discord_bridge": {
@@ -102,7 +102,7 @@ ENABLED_PROCESSES = {
         "entry": "marketplace/discord_bridge.py",
         "required_envs": ["DISCORD_BOT_TOKEN", "BRIDGE_API_KEY"],
         "extra_env": {
-            "BRIDGE_API_URL": "http://127.0.0.1:5050",
+            "BRIDGE_API_URL": "http://127.0.0.1:5052",
         },
     },
 }
