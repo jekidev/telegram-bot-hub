@@ -13,7 +13,7 @@ OWNER_CHAT_ID = int(_owner_chat_id_raw) if _owner_chat_id_raw.isdigit() else Non
 # Static catalog of the six bots that are actually deployed.
 BOT_LINKS = [
     ("Group Guard", "valkyriegroupmod_bot", "Anti-raid / spam guard for groups"),
-    ("Marketplace", "valkyriesellerbuyer_bot", "Buyer/seller flow, referrals, lottery, Stars payments"),
+    ("Image Bot", "valkyriesellerbuyer_bot", "Image enhance + OSINT (and marketplace if enabled)"),
     ("LLM Bridge", "valkyrieposter1249_bot", "Chat with Valkyrie AI in DM"),
     ("Maigret OSINT", "valkyriemother_bot", "Username / email / phone OSINT"),
     ("The Lounge", "valkyriewelcome_bot", "Group games, polls, confessions, alter ego"),
@@ -39,7 +39,7 @@ def build_help_text():
         "Valkyrie Menu Bot online.",
         "",
         "Try the buttons below, or use commands:",
-        "/menu – Show buttons",
+        "/menu – Show buttons (or post into a group if you are the owner)",
         "/bots – List bots with descriptions",
         "/postmenu – Post menu into a group (owner only)",
         "/alive – Health check",
@@ -60,11 +60,29 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def menu_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    del context
+    # In DM: show the menu to the user.
+    # In a group: only the owner can post the menu into that group.
+    chat = update.effective_chat
+    if not chat or not update.message:
+        return
+
+    if chat.type in ("group", "supergroup"):
+        if not is_owner(update):
+            return
+        try:
+            await context.bot.send_message(
+                chat_id=chat.id,
+                text="Valkyrie bots:",
+                reply_markup=build_main_keyboard(),
+            )
+        except Exception as exc:
+            await update.message.reply_text(f"Failed to post menu: {exc}")
+        return
+
     if not is_private_chat(update):
         return
-    if update.message:
-        await update.message.reply_text("Choose a Valkyrie bot:", reply_markup=build_main_keyboard())
+
+    await update.message.reply_text("Choose a Valkyrie bot:", reply_markup=build_main_keyboard())
 
 
 async def bots_command(update: Update, context: ContextTypes.DEFAULT_TYPE):

@@ -11,29 +11,56 @@ from pathlib import Path
 ROOT_DIR = Path(__file__).resolve().parent
 STOP_TIMEOUT_SECONDS = 10
 
+
+def _normalize_env_aliases() -> None:
+    """
+    Backward compatible env var aliases.
+
+    A lot of deploy failures are just env var name typos. We normalize the few
+    we have seen in the wild so the bots can still start.
+    """
+
+    aliases: dict[str, list[str]] = {
+        # Common typo (extra "N" in VALKYRIE...)
+        "VALKYRIESELLERBUYER_BOT_TOKEN": ["VALKYRIENSELLERBUYER_BOT_TOKEN"],
+    }
+
+    for canonical, alt_keys in aliases.items():
+        if os.environ.get(canonical):
+            continue
+        for alt in alt_keys:
+            val = os.environ.get(alt)
+            if val:
+                os.environ[canonical] = val
+                break
+
 ENABLED_PROCESSES = {
     "menu_bot": {
         "label": "Menu Bot",
         "token_env": "VALKYRIEMENU_BOT_TOKEN",
     },
     "group_guard_bot": {
-        "label": "Group Guard Admin Bot",
+        "label": "Group Guard Bot",
         "token_env": "VALKYRIEGROUPMOD_BOT_TOKEN",
         "entry": "marketplace/admin_bot.py",
+        "fallback_entry": "bots/group_guard_bot.py",
         "required_envs": ["VALKYRIEGROUPMOD_BOT_TOKEN", "DATABASE_URL"],
+        "fallback_required_envs": ["VALKYRIEGROUPMOD_BOT_TOKEN"],
         "extra_env": {
             "TELEGRAM_BOT_TOKEN": "${VALKYRIEGROUPMOD_BOT_TOKEN}",
         },
     },
     "image_bot": {
-        "label": "Marketplace (Seller/Buyer) Bot",
+        "label": "Image Bot",
         "token_env": "VALKYRIESELLERBUYER_BOT_TOKEN",
         "entry": "marketplace/seller_buyer_bot.py",
+        "fallback_entry": "bots/image_bot.py",
         "required_envs": [
             "VALKYRIESELLERBUYER_BOT_TOKEN",
             "DATABASE_URL",
             "BOT_ENCRYPTION_KEY",
         ],
+        "fallback_required_envs": ["VALKYRIESELLERBUYER_BOT_TOKEN"],
         "extra_env": {
             "SELLER_BUYER_BOT_TOKEN": "${VALKYRIESELLERBUYER_BOT_TOKEN}",
         },
@@ -85,9 +112,12 @@ ENABLED_PROCESSES = {
 class ManagedProcess:
     name: str
     label: str
-    path: Path
+    primary_path: Path
+    fallback_path: Path | None = None
+    active_path: Path | None = None
     token_env: str | None = None
     required_envs: tuple[str, ...] = ()
+    fallback_required_envs: tuple[str, ...] = ()
     extra_env: dict[str, str] = field(default_factory=dict)
     process: subprocess.Popen | None = None
     started_at: float | None = None
@@ -97,6 +127,7 @@ class ManagedProcess:
 
 class BotManager:
     def __init__(self):
+        _normalize_env_aliases()
         self._lock = threading.Lock()
         self.bots = {}
         self.load_bots()
@@ -109,22 +140,35 @@ class BotManager:
         loaded_bots = {}
 
         for name, config in ENABLED_PROCESSES.items():
-            path = self._resolve_path(name, config)
+            primary_path = self._resolve_path(name, config)
+            fallback_entry = config.get("fallback_entry")
+            fallback_path = (ROOT_DIR / fallback_entry).resolve() if fallback_entry else None
             token_env = config.get("token_env")
             required_envs = tuple(config.get("required_envs") or ([token_env] if token_env else []))
+            if fallback_path:
+                fallback_required_envs = tuple(
+                    config.get("fallback_required_envs")
+                    or ([token_env] if token_env else [])
+                )
+            else:
+                # No fallback variant: treat "fallback" requirements the same as full.
+                fallback_required_envs = required_envs
             extra_env = dict(config.get("extra_env") or {})
 
             bot = ManagedProcess(
                 name=name,
                 label=config["label"],
-                path=path,
+                primary_path=primary_path,
+                fallback_path=fallback_path,
+                active_path=primary_path,
                 token_env=token_env,
                 required_envs=required_envs,
+                fallback_required_envs=fallback_required_envs,
                 extra_env=extra_env,
             )
 
-            if not path.exists():
-                bot.last_error = f"Entry file not found: {path}"
+            if not primary_path.exists():
+                bot.last_error = f"Entry file not found: {primary_path}"
 
             loaded_bots[name] = bot
 
@@ -145,11 +189,31 @@ class BotManager:
             bot.last_error = f"Bot exited with code {exit_code}"
         return False
 
-    def _missing_env(self, bot: ManagedProcess) -> str | None:
-        for key in bot.required_envs:
+    def _missing_env(self, required_envs: tuple[str, ...]) -> str | None:
+        for key in required_envs:
             if not os.environ.get(key):
                 return key
         return None
+
+    def _select_variant(self, bot: ManagedProcess) -> tuple[Path, tuple[str, ...], str]:
+        """
+        Decide whether to run the primary (full) bot or the fallback (basic) bot.
+
+        This keeps "basic" features available even when DB/keys are not configured,
+        while automatically switching to the full original bots as soon as the
+        required env vars exist.
+        """
+
+        full_missing = self._missing_env(bot.required_envs)
+        if full_missing is None:
+            return bot.primary_path, bot.required_envs, "full"
+
+        if bot.fallback_path and bot.fallback_path.exists():
+            basic_missing = self._missing_env(bot.fallback_required_envs)
+            if basic_missing is None:
+                return bot.fallback_path, bot.fallback_required_envs, "basic"
+
+        return bot.primary_path, bot.required_envs, "full"
 
     def _expand_extra_env(self, extra_env: dict[str, str], env: dict[str, str]) -> dict[str, str]:
         pattern = re.compile(r"\$\{([^}]+)\}")
@@ -163,16 +227,20 @@ class BotManager:
         return {key: expand(value) for key, value in extra_env.items()}
 
     def start(self, name):
+        _normalize_env_aliases()
         with self._lock:
             bot = self.bots.get(name)
             if bot is None:
                 return False, "Unknown bot"
 
-            if not bot.path.exists():
-                bot.last_error = f"Entry file not found: {bot.path}"
+            path, required_envs, mode = self._select_variant(bot)
+            bot.active_path = path
+
+            if not path.exists():
+                bot.last_error = f"Entry file not found: {path}"
                 return False, bot.last_error
 
-            missing = self._missing_env(bot)
+            missing = self._missing_env(required_envs)
             if missing:
                 bot.last_error = f"Missing environment variable: {missing}"
                 return False, bot.last_error
@@ -185,7 +253,7 @@ class BotManager:
             env.update(self._expand_extra_env(bot.extra_env, env))
 
             bot.process = subprocess.Popen(
-                [sys.executable, str(bot.path)],
+                [sys.executable, str(path)],
                 cwd=str(ROOT_DIR),
                 env=env,
             )
@@ -193,7 +261,7 @@ class BotManager:
             bot.last_error = None
             bot.last_exit_code = None
 
-            return True, "Bot started"
+            return True, f"Bot started ({mode})"
 
     def start_all(self):
         for name in ENABLED_PROCESSES:
@@ -208,7 +276,11 @@ class BotManager:
             for name in sorted(self.bots):
                 bot = self.bots[name]
                 running = self._process_status(bot)
-                configured = self._missing_env(bot) is None
+                # Consider it "configured" if either full-mode OR basic-mode can start.
+                configured = (
+                    self._missing_env(bot.required_envs) is None
+                    or self._missing_env(bot.fallback_required_envs) is None
+                )
                 bots.append(
                     {
                         "name": bot.name,
@@ -216,6 +288,8 @@ class BotManager:
                         "token_env": bot.token_env,
                         "configured": configured,
                         "required_envs": list(bot.required_envs),
+                        "fallback_required_envs": list(bot.fallback_required_envs),
+                        "entry": str(bot.active_path or bot.primary_path),
                         "running": running,
                         "pid": bot.process.pid if bot.process else None,
                         "last_exit_code": bot.last_exit_code,
