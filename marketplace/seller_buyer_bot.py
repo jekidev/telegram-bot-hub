@@ -60,6 +60,10 @@ DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
 if not DATABASE_URL:
     raise RuntimeError("Missing DATABASE_URL.")
 
+# Set application_name so Postgres logs show which component is connecting.
+# Can be overridden per-deploy with PG_APP_NAME.
+_PG_APP_NAME = os.environ.get("PG_APP_NAME", "valkyrie_seller_buyer")
+
 _owner_chat_id_raw = os.environ.get("BOT_OWNER_CHAT_ID", "").strip()
 OWNER_CHAT_ID = int(_owner_chat_id_raw) if _owner_chat_id_raw.isdigit() else None
 ADMIN_NOTIFY_CHAT_ID = ADMIN_GROUP_ID if ADMIN_GROUP_ID is not None else OWNER_CHAT_ID
@@ -98,7 +102,7 @@ AWAITING_DISPUTE = "dispute"
 def _get_pool():
     global _pool
     if _pool is None:
-        _pool = psycopg2.pool.SimpleConnectionPool(1, 10, DATABASE_URL)
+        _pool = psycopg2.pool.SimpleConnectionPool(1, 10, DATABASE_URL, application_name=_PG_APP_NAME)
     return _pool
 
 

@@ -70,12 +70,14 @@ TG_API_SELLER = f"https://api.telegram.org/bot{SELLER_TOKEN}"
 
 app = Flask(__name__)
 _pool: psycopg2.pool.SimpleConnectionPool | None = None
+_PG_APP_NAME = os.environ.get("PG_APP_NAME", "valkyrie_admin_api")
 
 
 def _get_pool():
     global _pool
     if _pool is None:
-        _pool = psycopg2.pool.SimpleConnectionPool(1, 5, DATABASE_URL)
+        # Add application_name so Postgres logs show which component is connecting.
+        _pool = psycopg2.pool.SimpleConnectionPool(1, 5, DATABASE_URL, application_name=_PG_APP_NAME)
     return _pool
 
 
