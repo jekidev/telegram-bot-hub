@@ -1,8 +1,25 @@
+import asyncio
+import base64
 import os
+import random
+
 import aiohttp
+import requests
 from io import BytesIO
 
+from runtime.ai_keys import venice_api_key_candidates
+
 DEEPAI_API_KEY = os.environ.get("DEEPAI_API_KEY", "quickstart-QUdJIGlzIGNvbWluZy4uLi4K")
+
+VENICE_BASE_URL = "https://api.venice.ai/api/v1"
+VENICE_VISION_MODELS = [
+    m.strip()
+    for m in os.environ.get(
+        "VALKYRIE_VENICE_VISION_MODELS",
+        "qwen3-vl-235b-a22b,qwen2.5-vl-72b",
+    ).split(",")
+    if m.strip()
+]
 
 
 async def _enhance_image_with_deepai(image_bytes: bytes) -> bytes | None:
@@ -82,9 +99,59 @@ async def glow_up_image(image_bytes: bytes) -> tuple[bytes | None, str]:
         return None, "Fejl"
 
 
-async def roast_image_text(image_bytes: bytes) -> str:
-    import random
+def _venice_vision_roast_sync(image_bytes: bytes) -> str | None:
+    """OpenAI-compatible vision roast via Venice; returns None on failure."""
+    if not image_bytes:
+        return None
+    b64 = base64.standard_b64encode(image_bytes).decode("ascii")
+    data_url = f"data:image/jpeg;base64,{b64}"
+    prompt = (
+        "Skriv en kort, sjov og lidt grov roast på dansk af personen på billedet. "
+        "Maks 3 sætninger. Vær kreativ og hold det som vittighed."
+    )
+    for api_key in venice_api_key_candidates():
+        for model in VENICE_VISION_MODELS:
+            try:
+                r = requests.post(
+                    f"{VENICE_BASE_URL}/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {api_key}",
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "model": model,
+                        "messages": [
+                            {
+                                "role": "user",
+                                "content": [
+                                    {"type": "text", "text": prompt},
+                                    {"type": "image_url", "image_url": {"url": data_url}},
+                                ],
+                            }
+                        ],
+                        "temperature": 0.9,
+                        "max_tokens": 400,
+                        "venice_parameters": {"include_venice_system_prompt": False},
+                    },
+                    timeout=90,
+                )
+                if r.status_code != 200:
+                    continue
+                data = r.json()
+                text = (
+                    (data.get("choices") or [{}])[0]
+                    .get("message", {})
+                    .get("content", "")
+                    .strip()
+                )
+                if text:
+                    return text
+            except Exception:
+                continue
+    return None
 
+
+async def roast_image_text(image_bytes: bytes) -> str:
     roasts = [
         "Du ser ud som om du ikke har sovet siden 2019.",
         "Er det et profilbillede eller et signal om hjælp?",
@@ -96,4 +163,8 @@ async def roast_image_text(image_bytes: bytes) -> str:
         "Er det meningen at du ser søvnig ud, eller er det bare sådan du er?",
         "Du har den der 'jeg tager det seriøst' energi... men det gør ingen andre.",
     ]
+    loop = asyncio.get_running_loop()
+    ai_roast = await loop.run_in_executor(None, _venice_vision_roast_sync, image_bytes)
+    if ai_roast:
+        return ai_roast
     return random.choice(roasts)

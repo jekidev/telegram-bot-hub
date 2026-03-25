@@ -4,13 +4,14 @@ from pathlib import Path
 
 import requests
 
+from runtime.ai_keys import venice_api_key_candidates
+
 
 BASE_DIR = Path(__file__).resolve().parent
 SYSTEM_PROMPT_PATH = BASE_DIR / "llm_system_prompt.txt"
 
 OLLAMA_KEY = os.environ.get("OLLAMA_STANDALONE_KEY", "")
 OLLAMA_URL = os.environ.get("OLLAMA_BASE_URL", "")
-VENICE_API_KEY = os.environ.get("OLLAMA_API_KEY", "")
 VENICE_BASE_URL = "https://api.venice.ai/api/v1"
 OPENROUTER_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 DISCORD_WEBHOOK = os.environ.get("DISCORD_WEBHOOK_URL", "")
@@ -117,27 +118,25 @@ def _try_ollama(messages):
 
 
 def _try_venice(messages):
-    if not VENICE_API_KEY:
-        return ""
-
-    for model in VENICE_MODELS:
-        try:
-            reply = _post_json(
-                f"{VENICE_BASE_URL}/chat/completions",
-                {"Authorization": f"Bearer {VENICE_API_KEY}", "Content-Type": "application/json"},
-                {
-                    "model": model,
-                    "messages": messages,
-                    "temperature": TEMPERATURE,
-                    "max_tokens": MAX_TOKENS,
-                    "venice_parameters": {"include_venice_system_prompt": False},
-                },
-                60,
-            )
-            if reply:
-                return reply
-        except Exception:
-            continue
+    for api_key in venice_api_key_candidates():
+        for model in VENICE_MODELS:
+            try:
+                reply = _post_json(
+                    f"{VENICE_BASE_URL}/chat/completions",
+                    {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+                    {
+                        "model": model,
+                        "messages": messages,
+                        "temperature": TEMPERATURE,
+                        "max_tokens": MAX_TOKENS,
+                        "venice_parameters": {"include_venice_system_prompt": False},
+                    },
+                    60,
+                )
+                if reply:
+                    return reply
+            except Exception:
+                continue
     return ""
 
 
