@@ -241,6 +241,13 @@ class BotManager:
 
         full_missing = self._missing_env(bot.required_envs)
         if full_missing is None:
+            if bot.primary_path.exists():
+                return bot.primary_path, bot.required_envs, "full"
+            # Primary entry missing on disk (e.g. optional Grok image bot) — use fallback if possible.
+            if bot.fallback_path and bot.fallback_path.exists():
+                basic_missing = self._missing_env(bot.fallback_required_envs)
+                if basic_missing is None:
+                    return bot.fallback_path, bot.fallback_required_envs, "basic"
             return bot.primary_path, bot.required_envs, "full"
 
         if bot.fallback_path and bot.fallback_path.exists():
