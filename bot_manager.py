@@ -100,42 +100,36 @@ ENABLED_PROCESSES = {
             "LOUNGE_BOT_TOKEN": "${VALKYRIEWELCOME_BOT_TOKEN}",
         },
     },
-    "admin_api": {
-        "label": "Admin API",
-        "entry": "marketplace/admin_api.py",
-        "required_envs": [
-            "DATABASE_URL",
-            "VALKYRIEGROUPMOD_BOT_TOKEN",
-            "VALKYRIESELLERBUYER_BOT_TOKEN",
-        ],
-        "extra_env": {
-            "TELEGRAM_BOT_TOKEN": "${VALKYRIEGROUPMOD_BOT_TOKEN}",
-            "SELLER_BUYER_BOT_TOKEN": "${VALKYRIESELLERBUYER_BOT_TOKEN}",
-            "BRIDGE_API_PORT": "5052",
-        },
-    },
-    "discord_bridge": {
-        "label": "Discord Bridge",
-        "entry": "marketplace/discord_bridge_simple.py",
-        "required_envs": ["DISCORD_BOT_TOKEN"],
-        "extra_env": {},
-    },
-    "typebot_service": {
-        "label": "Typebot Docker Services",
-        "entry": "bots/runtime/typebot_service.py start",
-        "required_envs": [],
-        "extra_env": {},
-    },
-    "typebot_bot": {
-        "label": "Typebot Telegram Bot",
-        "token_env": "VALKYRIETYPEBOT_BOT_TOKEN",
-        "entry": "bots/typebot_bot.py",
-        "required_envs": ["VALKYRIETYPEBOT_BOT_TOKEN"],
-        "extra_env": {
-            "TYPEBOT_VIEWER_URL": "http://localhost:8081",
-            "TYPEBOT_API_URL": "http://localhost:3000",
-        },
-    },
+    # DISABLED - Not used on Render
+    # "image_bot": {
+    #     "label": "Valkyrie ImageGen Bot (Grok)",
+    #     "token_env": "VALKYRIEIMAGE_BOT_TOKEN",
+    #     "entry": "bots/grok_image_bot.py",
+    #     "fallback_entry": "bots/image_bot.py",
+    #     "required_envs": ["VALKYRIEIMAGE_BOT_TOKEN"],
+    #     "fallback_required_envs": ["VALKYRIEIMAGE_BOT_TOKEN"],
+    # },
+    # DISABLED - Not used on Render
+    # "admin_api": {
+    #     "label": "Admin API",
+    #     "entry": "marketplace/admin_api.py",
+    #     "required_envs": ["DATABASE_URL", "VALKYRIEGROUPMOD_BOT_TOKEN", "VALKYRIESELLERBUYER_BOT_TOKEN"],
+    # },
+    # "discord_bridge": {
+    #     "label": "Discord Bridge",
+    #     "entry": "marketplace/discord_bridge_simple.py",
+    #     "required_envs": ["DISCORD_BOT_TOKEN"],
+    # },
+    # "typebot_service": {
+    #     "label": "Typebot Docker Services",
+    #     "entry": "bots/runtime/typebot_service.py start",
+    # },
+    # "typebot_bot": {
+    #     "label": "Typebot Telegram Bot",
+    #     "token_env": "VALKYRIETYPEBOT_BOT_TOKEN",
+    #     "entry": "bots/typebot_bot.py",
+    #     "required_envs": ["VALKYRIETYPEBOT_BOT_TOKEN"],
+    # },
     "crypto_auth_bot": {
         "label": "CryptoAuth Bot (Betalingsadgang)",
         "token_env": "VALKYRIECRYPTOAUTH_BOT_TOKEN",
