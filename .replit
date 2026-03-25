@@ -1,0 +1,11 @@
+run = ["python", "start_all_bots.py"]
+entrypoint = "start_all_bots.py"
+modules = ["python-3.11"]
+
+[env]
+PYTHON_VERSION = "3.11"
+PYTHONUNBUFFERED = "1"
+
+[deployment]
+run = ["sh", "-c", "python start_all_bots.py"]
+deploymentTarget = "cloudrun"

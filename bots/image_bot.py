@@ -1,191 +1,155 @@
+"""
+Image Bot - @valkyrieimagegen_bot
+Based on Telegram-Image-Bot from https://github.com/jekidev/Telegram-Image-Bot
+Features: upscale, glowup, roast
+NO VPN/PROXY - Direct connection
+"""
+import logging
 import os
-import tempfile
-from pathlib import Path
 from io import BytesIO
 
 from dotenv import load_dotenv
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
-from telegram.ext import ApplicationBuilder, CallbackQueryHandler, CommandHandler, ContextTypes, MessageHandler, filters
-from common import is_private_chat, make_alive_command, make_post_init, run_polling
-from runtime.image_enhancement import glow_up_image, roast_image_text, upscale_image
-from runtime.image_osint import run_image_search
+from telegram.ext import (
+    Application,
+    CommandHandler,
+    MessageHandler,
+    CallbackQueryHandler,
+    filters,
+    ContextTypes,
+)
+from runtime.image_enhancement import upscale_image, glow_up_image, roast_image_text
 
 load_dotenv()
-TOKEN = os.getenv("VALKYRIESELLERBUYER_BOT_TOKEN")
 
-MODES = ["upscale", "glowup", "roast", "osint"]
+logging.basicConfig(
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    level=logging.INFO
+)
+logger = logging.getLogger(__name__)
+
+# Token: 8606792990:AAH_VjejWrgzv_VDWVafcgw4p8w0NMy7DTk
+BOT_TOKEN = os.getenv("VALKYRIEIMAGE_BOT_TOKEN", "8606792990:AAH_VjejWrgzv_VDWVafcgw4p8w0NMy7DTk")
 
 
-def build_keyboard():
-    return InlineKeyboardMarkup(
-        [
-            [
-                InlineKeyboardButton("✨ Glow-Up", callback_data="mode_glowup"),
-                InlineKeyboardButton("🖼️ Upscale", callback_data="mode_upscale"),
-                InlineKeyboardButton("🔥 Roast", callback_data="mode_roast"),
-            ],
-            [InlineKeyboardButton("🕵️ Image OSINT", callback_data="mode_osint")],
-        ]
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    text = (
+        f"Hej {user.first_name}! 📸\n\n"
+        "Send mig et billede, og jeg forbedrer det for dig.\n\n"
+        "Vælg hvad du vil:\n\n"
+        "/upscale — Upscaler billedet 2x (gratis)\n"
+        "/glowup — Giver billedet et glow-up (større + skarpere + bedre farver)\n"
+        "/roast — AI roaster dit billede 🔥\n\n"
+        "Eller send bare et billede direkte, så upscaler jeg det automatisk."
     )
-
-
-def set_mode(context: ContextTypes.DEFAULT_TYPE, mode: str):
-    if mode not in MODES:
-        mode = "upscale"
-    context.user_data["image_mode"] = mode
-
-
-def get_mode(context: ContextTypes.DEFAULT_TYPE) -> str:
-    mode = context.user_data.get("image_mode", "upscale")
-    return mode if mode in MODES else "upscale"
-
-
-async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    del context
-    if not is_private_chat(update):
-        return
-    if update.message:
-        await update.message.reply_text(
-            "Image Bot online.\n\n"
-            "Send et billede og vælg:\n"
-            "• /upscale – 2x forstørrelse\n"
-            "• /glowup – farver + skarphed\n"
-            "• /roast – AI roast af billedet\n"
-            "• /osint – reverse/EXIF + sociale spor\n",
-            reply_markup=build_keyboard(),
-        )
-
-
-async def mode_command(update: Update, context: ContextTypes.DEFAULT_TYPE, mode: str):
-    if not is_private_chat(update):
-        return
-    set_mode(context, mode)
-    if update.message:
-        labels = {
-            "upscale": "🖼️ Upscale valgt. Send et billede.",
-            "glowup": "✨ Glow-Up valgt. Send et billede.",
-            "roast": "🔥 Roast valgt. Send et billede.",
-            "osint": "🕵️ OSINT valgt. Send et billede (jeg laver reverse/EXIF).",
-        }
-        await update.message.reply_text(labels[mode], reply_markup=build_keyboard())
+    await update.message.reply_text(text)
 
 
 async def upscale_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await mode_command(update, context, "upscale")
+    context.user_data["image_mode"] = "upscale"
+    await update.message.reply_text(
+        "📸 Upscale klar!\n\nSend mig nu et billede, og jeg upscaler det 2x gratis."
+    )
 
 
 async def glowup_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await mode_command(update, context, "glowup")
+    context.user_data["image_mode"] = "glowup"
+    await update.message.reply_text(
+        "✨ Glow-Up klar!\n\nSend mig et billede — jeg giver det 2x størrelse + bedre farver + skarphed."
+    )
 
 
 async def roast_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await mode_command(update, context, "roast")
+    context.user_data["image_mode"] = "roast"
+    await update.message.reply_text(
+        "🔥 Roast Mode!\n\nSend mig et billede, og AI roaster det. Advarsel: Det kan gøre lidt ondt 😅"
+    )
 
 
-async def osint_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await mode_command(update, context, "osint")
+async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not update.message.photo:
+        return
+
+    mode = context.user_data.get("image_mode", "upscale")
+
+    await update.message.reply_text("⏳ Behandler dit billede, vent et øjeblik...")
+
+    try:
+        photo = update.message.photo[-1]
+        file = await photo.get_file()
+        image_bytes = bytes(await file.download_as_bytearray())
+
+        if mode == "roast":
+            roast_text = await roast_image_text(image_bytes)
+            await update.message.reply_text(f"🔥 AI Roast:\n\n{roast_text}")
+            context.user_data["image_mode"] = "upscale"
+            return
+
+        if mode == "glowup":
+            result, method = await glow_up_image(image_bytes)
+            label = "Glow Up"
+        else:
+            result, method = await upscale_image(image_bytes)
+            label = "Upscale"
+
+        if result:
+            bio = BytesIO(result)
+            bio.name = "enhanced.jpg"
+            keyboard = [[
+                InlineKeyboardButton("✨ Glow-Up", callback_data="mode_glowup"),
+                InlineKeyboardButton("📸 Upscale", callback_data="mode_upscale"),
+                InlineKeyboardButton("🔥 Roast", callback_data="mode_roast"),
+            ]]
+            await update.message.reply_photo(
+                photo=bio,
+                caption=f"✅ {label} færdig!\nMetode: {method}",
+                reply_markup=InlineKeyboardMarkup(keyboard)
+            )
+        else:
+            await update.message.reply_text("❌ Billedbehandlingen fejlede. Prøv et andet billede.")
+
+    except Exception as e:
+        logger.error(f"Photo handling error: {e}")
+        await update.message.reply_text("❌ Der opstod en fejl. Prøv igen!")
+
+    context.user_data["image_mode"] = "upscale"
 
 
 async def mode_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
-    data = query.data or ""
-    if data.startswith("mode_"):
-        mode = data.split("_", 1)[1]
-        await mode_command(update, context, mode)
+    data = query.data
 
-
-async def handle_image(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not is_private_chat(update):
-        return
-    message = update.message
-    if not message or not (message.photo or (message.document and message.document.mime_type and message.document.mime_type.startswith("image/"))):
-        return
-
-    mode = get_mode(context)
-    await message.reply_text("⏳ Behandler billedet, vent et øjeblik...")
-
-    telegram_file = None
-    suffix = ".jpg"
-    if message.photo:
-        telegram_file = await context.bot.get_file(message.photo[-1].file_id)
-    elif message.document:
-        telegram_file = await context.bot.get_file(message.document.file_id)
-        if message.document.file_name and "." in message.document.file_name:
-            suffix = os.path.splitext(message.document.file_name)[1] or suffix
-
-    if telegram_file is None:
-        await message.reply_text("Kunne ikke hente billedet.")
-        return
-
-    temp_path = None
-    try:
-        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
-            temp_path = temp_file.name
-
-        await telegram_file.download_to_drive(temp_path)
-        image_bytes = Path(temp_path).read_bytes()
-
-        if mode == "roast":
-            roast_text = await roast_image_text(image_bytes)
-            await message.reply_text(f"🔥 AI Roast:\n\n{roast_text}", reply_markup=build_keyboard())
-        elif mode == "glowup":
-            result, method = await glow_up_image(image_bytes)
-            await _send_result(message, result, method, label="Glow-Up")
-        elif mode == "osint":
-            report = await run_image_search(temp_path, message.caption or "")
-            await _send_chunks(message, report)
-        else:
-            result, method = await upscale_image(image_bytes)
-            await _send_result(message, result, method, label="Upscale")
-    except Exception as exc:
-        await message.reply_text(f"🚫 Billedbehandlingen fejlede: {exc}")
-    finally:
-        set_mode(context, "upscale")
-        if temp_path and os.path.exists(temp_path):
-            try:
-                os.remove(temp_path)
-            except OSError:
-                pass
-
-
-async def _send_result(message, result: bytes | None, method: str, label: str):
-    if not result:
-        await message.reply_text("🚫 Billedbehandlingen fejlede. Prøv et andet billede.", reply_markup=build_keyboard())
-        return
-    bio = BytesIO(result)
-    bio.name = "enhanced.jpg"
-    await message.reply_photo(
-        photo=bio,
-        caption=f"✅ {label} klar!\nMetode: {method}",
-        reply_markup=build_keyboard(),
-    )
-
-
-async def _send_chunks(message, text: str, chunk_size: int = 3500):
-    chunks = [text[i:i + chunk_size] for i in range(0, len(text), chunk_size)] or [text]
-    for chunk in chunks:
-        await message.reply_text(chunk, reply_markup=build_keyboard())
+    if data == "mode_glowup":
+        context.user_data["image_mode"] = "glowup"
+        await query.message.reply_text("✨ Glow-Up valgt! Send mig nu et billede.")
+    elif data == "mode_upscale":
+        context.user_data["image_mode"] = "upscale"
+        await query.message.reply_text("📸 Upscale valgt! Send mig nu et billede.")
+    elif data == "mode_roast":
+        context.user_data["image_mode"] = "roast"
+        await query.message.reply_text("🔥 Roast valgt! Send mig nu et billede.")
 
 
 def main():
-    if not TOKEN:
-        print("Missing VALKYRIESELLERBUYER_BOT_TOKEN")
+    if not BOT_TOKEN:
+        print("Missing VALKYRIEIMAGE_BOT_TOKEN")
         return
 
-    app = ApplicationBuilder().token(TOKEN).post_init(make_post_init("Image Bot")).build()
-    app.add_handler(CommandHandler("start", start_command))
-    app.add_handler(CommandHandler("help", start_command))
+    app = Application.builder().token(BOT_TOKEN).build()
+
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("help", start))
     app.add_handler(CommandHandler("upscale", upscale_command))
     app.add_handler(CommandHandler("glowup", glowup_command))
     app.add_handler(CommandHandler("roast", roast_command))
-    app.add_handler(CommandHandler("osint", osint_command))
     app.add_handler(CallbackQueryHandler(mode_callback, pattern="^mode_"))
-    app.add_handler(CommandHandler("alive", make_alive_command("Image Bot")))
-    app.add_handler(MessageHandler(filters.PHOTO | filters.Document.IMAGE, handle_image))
+    app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
 
-    print("Image bot started")
-    run_polling(app)
+    logger.info("Image Bot (@valkyrieimagegen_bot) starting...")
+    print("🤖 Image Bot (@valkyrieimagegen_bot) started - NO VPN/PROXY")
+    app.run_polling(allowed_updates=Update.ALL_TYPES)
 
 
 if __name__ == "__main__":

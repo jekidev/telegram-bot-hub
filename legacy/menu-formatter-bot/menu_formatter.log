@@ -1,0 +1,11 @@
+Starting legacy menu formatter bot...
+
+> valkyrie-poster035@1.0.0 start
+> tsx --env-file=.env src/main.ts
+
+🚕  Valkyrie_POSTER035 PRO starting…
+ℹ️   Admin ID: 8505253720
+ℹ️   No saved session — send /start to the bot to authenticate.
+(node:8608) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+✅  Polling started — send /start to @your_bot

@@ -1,8 +1,138 @@
 services:
-  - type: web
-    name: valkyrie-cloud
-    runtime: python
-    plan: free
-    buildCommand: pip install -r requirements.txt
-    startCommand: python server.py
-    healthCheckPath: /health
+- type: web
+  name: valkyrie-menu-bot
+  runtime: python
+  plan: free
+  buildCommand: pip install -r requirements.txt
+  startCommand: python bots/menu_bot.py
+  healthCheckPath: /health
+  envVars:
+  - key: PYTHON_VERSION
+    value: 3.11.0
+  - key: VALKYRIEMENU_BOT_TOKEN
+    sync: false
+  - key: GROK_API_KEY
+    sync: false
+  - key: OPENROUTER_API_KEY
+    sync: false
+  autoDeploy: true
+- type: web
+  name: valkyrie-groupmod-bot
+  runtime: python
+  plan: free
+  buildCommand: pip install -r requirements.txt
+  startCommand: python bots/group_guard_bot.py
+  healthCheckPath: /health
+  envVars:
+  - key: PYTHON_VERSION
+    value: 3.11.0
+  - key: VALKYRIEGROUPMOD_BOT_TOKEN
+    sync: false
+  - key: DATABASE_URL
+    sync: false
+  autoDeploy: true
+- type: web
+  name: valkyrie-poster-bot
+  runtime: python
+  plan: free
+  buildCommand: pip install -r requirements.txt
+  startCommand: python bots/llm_bridge_bot.py
+  healthCheckPath: /health
+  envVars:
+  - key: PYTHON_VERSION
+    value: 3.11.0
+  - key: VALKYRIEPOSTER1249_BOT_TOKEN
+    sync: false
+  - key: GROK_API_KEY
+    sync: false
+  - key: OPENROUTER_API_KEY
+    sync: false
+  autoDeploy: true
+- type: web
+  name: valkyrie-image-bot
+  runtime: python
+  plan: free
+  buildCommand: pip install -r requirements.txt
+  startCommand: python bots/image_bot.py
+  healthCheckPath: /health
+  envVars:
+  - key: PYTHON_VERSION
+    value: 3.11.0
+  - key: VALKYRIEIMAGE_BOT_TOKEN
+    sync: false
+  - key: GROK_API_KEY
+    sync: false
+  autoDeploy: true
+- type: web
+  name: valkyrie-welcome-bot
+  runtime: python
+  plan: free
+  buildCommand: pip install -r requirements.txt
+  startCommand: python bots/lounge_bot.py
+  healthCheckPath: /health
+  envVars:
+  - key: PYTHON_VERSION
+    value: 3.11.0
+  - key: VALKYRIEWELCOME_BOT_TOKEN
+    sync: false
+  autoDeploy: true
+- type: web
+  name: valkyrie-cryptoauth-bot
+  runtime: python
+  plan: free
+  buildCommand: pip install -r requirements.txt
+  startCommand: python bots/crypto_auth_bot.py
+  healthCheckPath: /health
+  envVars:
+  - key: PYTHON_VERSION
+    value: 3.11.0
+  - key: VALKYRIECRYPTOAUTH_BOT_TOKEN
+    sync: false
+  - key: DATABASE_URL
+    sync: false
+  autoDeploy: true
+- type: web
+  name: valkyrie-socks5-bot
+  runtime: python
+  plan: free
+  buildCommand: pip install -r requirements.txt
+  startCommand: python bots/socks5_bot.py
+  healthCheckPath: /health
+  envVars:
+  - key: PYTHON_VERSION
+    value: 3.11.0
+  - key: VALKYRIESOCKS5_BOT_TOKEN
+    sync: false
+  autoDeploy: true
+- type: web
+  name: valkyrie-sellerbuyer-bot
+  runtime: python
+  plan: free
+  buildCommand: pip install -r requirements.txt
+  startCommand: python bots/seller_buyer_bot.py
+  healthCheckPath: /health
+  envVars:
+  - key: PYTHON_VERSION
+    value: 3.11.0
+  - key: VALKYRIESELLERBUYER_BOT_TOKEN
+    sync: false
+  - key: DATABASE_URL
+    sync: false
+  - key: BOT_ENCRYPTION_KEY
+    sync: false
+  autoDeploy: true
+- type: web
+  name: valkyrie-typebot-bot
+  runtime: python
+  plan: free
+  buildCommand: pip install -r requirements.txt
+  startCommand: python bots/typebot_bot.py
+  healthCheckPath: /health
+  envVars:
+  - key: PYTHON_VERSION
+    value: 3.11.0
+  - key: VALKYRIETYPEBOT_BOT_TOKEN
+    sync: false
+  - key: TYPEBOT_VIEWER_URL
+    sync: false
+  autoDeploy: true

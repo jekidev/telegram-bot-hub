@@ -7,6 +7,11 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
 
 ROOT_DIR = Path(__file__).resolve().parent
 STOP_TIMEOUT_SECONDS = 10
@@ -35,6 +40,12 @@ def _normalize_env_aliases() -> None:
                 break
 
 ENABLED_PROCESSES = {
+    "socks5_bot": {
+        "label": "Valkyrie Socks5 Tor Bot",
+        "token_env": "VALKYRIESOCKS5_BOT_TOKEN",
+        "entry": "bots/socks5_bot.py",
+        "required_envs": ["VALKYRIESOCKS5_BOT_TOKEN"],
+    },
     "menu_bot": {
         "label": "Menu Bot",
         "token_env": "VALKYRIEMENU_BOT_TOKEN",
@@ -42,7 +53,7 @@ ENABLED_PROCESSES = {
     "group_guard_bot": {
         "label": "Group Guard Bot",
         "token_env": "VALKYRIEGROUPMOD_BOT_TOKEN",
-        "entry": "marketplace/admin_bot.py",
+        "entry": "bots/admin_bot.py",
         "fallback_entry": "bots/group_guard_bot.py",
         "required_envs": ["VALKYRIEGROUPMOD_BOT_TOKEN", "DATABASE_URL"],
         "fallback_required_envs": ["VALKYRIEGROUPMOD_BOT_TOKEN"],
@@ -50,33 +61,40 @@ ENABLED_PROCESSES = {
             "TELEGRAM_BOT_TOKEN": "${VALKYRIEGROUPMOD_BOT_TOKEN}",
         },
     },
-    "image_bot": {
-        "label": "Image Bot",
+    "seller_buyer": {
+        "label": "Seller/Buyer Bot",
         "token_env": "VALKYRIESELLERBUYER_BOT_TOKEN",
-        "entry": "marketplace/seller_buyer_bot.py",
-        "fallback_entry": "bots/image_bot.py",
-        "required_envs": [
-            "VALKYRIESELLERBUYER_BOT_TOKEN",
-            "DATABASE_URL",
-            "BOT_ENCRYPTION_KEY",
-        ],
-        "fallback_required_envs": ["VALKYRIESELLERBUYER_BOT_TOKEN"],
+        "entry": "bots/seller_buyer_bot.py",
+        "required_envs": ["VALKYRIESELLERBUYER_BOT_TOKEN", "DATABASE_URL", "BOT_ENCRYPTION_KEY"],
         "extra_env": {
             "SELLER_BUYER_BOT_TOKEN": "${VALKYRIESELLERBUYER_BOT_TOKEN}",
         },
     },
-    "llm_bridge_bot": {
-        "label": "LLM Bridge Bot",
+    "image_bot": {
+        "label": "Valkyrie ImageGen Bot (Grok)",
+        "token_env": "VALKYRIEIMAGE_BOT_TOKEN",
+        "entry": "bots/grok_image_bot.py",
+        "fallback_entry": "bots/image_bot.py",
+        "required_envs": ["VALKYRIEIMAGE_BOT_TOKEN"],
+        "fallback_required_envs": ["VALKYRIEIMAGE_BOT_TOKEN"],
+    },
+    "poster035_bot": {
+        "label": "Valkyrie POSTER035 PRO",
         "token_env": "VALKYRIEPOSTER1249_BOT_TOKEN",
+        "entry": "bots/llm_bridge_bot.py",
+        "required_envs": ["VALKYRIEPOSTER1249_BOT_TOKEN"],
     },
-    "maigret_bot": {
-        "label": "Maigret Bot",
-        "token_env": "VALKYRIEMOTHER_BOT_TOKEN",
-    },
+    # Maigret bot removed - was conflicting with mother bot
+    # "maigret_bot": {
+    #     "label": "Maigret OSINT Bot",
+    #     "token_env": "VALKYRIEMOTHER_BOT_TOKEN",
+    #     "entry": "bots/maigret_bot.py",
+    #     "required_envs": ["VALKYRIEMOTHER_BOT_TOKEN"],
+    # },
     "welcome_bot": {
         "label": "The Lounge Bot",
         "token_env": "VALKYRIEWELCOME_BOT_TOKEN",
-        "entry": "lounge/lounge_bot.py",
+        "entry": "bots/lounge_bot.py",
         "required_envs": ["VALKYRIEWELCOME_BOT_TOKEN"],
         "extra_env": {
             "LOUNGE_BOT_TOKEN": "${VALKYRIEWELCOME_BOT_TOKEN}",
@@ -87,7 +105,6 @@ ENABLED_PROCESSES = {
         "entry": "marketplace/admin_api.py",
         "required_envs": [
             "DATABASE_URL",
-            "BRIDGE_API_KEY",
             "VALKYRIEGROUPMOD_BOT_TOKEN",
             "VALKYRIESELLERBUYER_BOT_TOKEN",
         ],
@@ -99,10 +116,34 @@ ENABLED_PROCESSES = {
     },
     "discord_bridge": {
         "label": "Discord Bridge",
-        "entry": "marketplace/discord_bridge.py",
-        "required_envs": ["DISCORD_BOT_TOKEN", "BRIDGE_API_KEY"],
+        "entry": "marketplace/discord_bridge_simple.py",
+        "required_envs": ["DISCORD_BOT_TOKEN"],
+        "extra_env": {},
+    },
+    "typebot_service": {
+        "label": "Typebot Docker Services",
+        "entry": "bots/runtime/typebot_service.py start",
+        "required_envs": [],
+        "extra_env": {},
+    },
+    "typebot_bot": {
+        "label": "Typebot Telegram Bot",
+        "token_env": "VALKYRIETYPEBOT_BOT_TOKEN",
+        "entry": "bots/typebot_bot.py",
+        "required_envs": ["VALKYRIETYPEBOT_BOT_TOKEN"],
         "extra_env": {
-            "BRIDGE_API_URL": "http://127.0.0.1:5052",
+            "TYPEBOT_VIEWER_URL": "http://localhost:8081",
+            "TYPEBOT_API_URL": "http://localhost:3000",
+        },
+    },
+    "crypto_auth_bot": {
+        "label": "CryptoAuth Bot (Betalingsadgang)",
+        "token_env": "VALKYRIECRYPTOAUTH_BOT_TOKEN",
+        "entry": "bots/crypto_auth_bot.py",
+        "required_envs": ["VALKYRIECRYPTOAUTH_BOT_TOKEN"],
+        "extra_env": {
+            "CRYPTOAUTH_ADMIN_ID": "8505253720",
+            "CRYPTOAUTH_GROUP_ID": "3837410272",
         },
     },
 }
